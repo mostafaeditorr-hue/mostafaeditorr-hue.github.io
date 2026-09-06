@@ -1025,6 +1025,7 @@
         .btn-stop-record { background: var(--blue); }
         .chat-input-area {
             padding: 6px 8px;
+            padding-bottom: 16px;
             background: transparent;
             display: flex;
             gap: 8px;
@@ -1115,7 +1116,7 @@
             border: 1px solid var(--border-color);
         }
         .chat-locked-notice i { margin-left: 6px; }
-        .start-bot-bar { display: flex; justify-content: center; padding: 4px 0; }
+        .start-bot-bar { display: flex; justify-content: center; padding: 4px 0 16px; }
         .btn-start-bot {
             background: var(--blue);
             color: #fff;
@@ -2109,6 +2110,7 @@
         const db = { ref: dbRef };
 
         const OWNER_TELEGRAM_ID = '8921602643';
+        const DEFAULT_ADMIN_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij4KPGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNjQiIGZpbGw9IiMzNjlhZmYiLz4KPHBhdGggZD0iTTY0IDM0Yy0xNiAwLTI4IDEyLTI4IDI3djEwYTYgNiAwIDAgMCA2IDZoNFY1N2gtNGMwLTEyIDEwLTIxIDIyLTIxczIyIDkgMjIgMjFoLTR2MjBoNGE2IDYgMCAwIDAgNi02VjYxYzAtMTUtMTItMjctMjgtMjd6IiBmaWxsPSIjZmZmZmZmIi8+CjxyZWN0IHg9IjM0IiB5PSI2MyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgo8cmVjdCB4PSI4NCIgeT0iNjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgcng9IjQiIGZpbGw9IiNmZmZmZmYiLz4KPHBhdGggZD0iTTQyIDg4YzAgOCAxMCAxNCAyMiAxNCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
         const NOTIFY_WORKER_URL = '';
         const BOT_TOKEN = '8529606750:AAFvCr2z2YByipI_UvR_mNnhEIwmXlTLf3c';
         const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -2460,7 +2462,7 @@
                 showToast('ورود موفقیت‌آمیز!');
             } else if (identifier === 'admin' && password === 'admin123') {
                 if (!users['admin']) {
-                    users['admin'] = { name: 'پشتیبانی', family: 'مرکزی', userId: 'admin', username: 'admin', password: 'admin123', isAdmin: true, avatar: null, bio: '' };
+                    users['admin'] = { name: 'پشتیبانی', family: 'مرکزی', userId: 'admin', username: 'admin', password: 'admin123', isAdmin: true, avatar: DEFAULT_ADMIN_AVATAR, bio: '' };
                     saveUsers('admin');
                 }
                 currentUser = users['admin'];
@@ -2499,7 +2501,7 @@
                         password: null,
                         isAdmin: isOwner,
                         isRedVerified: false,
-                        avatar: tgUser.photo_url || null,
+                        avatar: tgUser.photo_url || (isOwner ? DEFAULT_ADMIN_AVATAR : null),
                         telegramId: tgUser.id,
                         bio: ''
                     };
@@ -2508,6 +2510,7 @@
                 } else {
                     userData.isAdmin = isOwner || !!userData.isAdmin;
                     userData.telegramId = tgUser.id;
+                    if (isOwner && !userData.avatar) userData.avatar = DEFAULT_ADMIN_AVATAR;
                     users[userId] = userData;
                 }
                 currentUser = users[userId];
@@ -2576,22 +2579,23 @@
         }
 
         function logout() {
-            if (confirm('آیا می‌خواهید خارج شوید؟')) {
-                currentUser = null;
-                localStorage.removeItem('app_current_session_v6');
-                document.getElementById('main-screen').classList.add('hidden');
-                document.getElementById('settings-screen').classList.add('hidden');
-                document.getElementById('profile-screen').classList.add('hidden');
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('auth-subtitle').textContent = 'به جمع ما بپیوندید';
-                document.getElementById('spinner-area').style.display = 'flex';
-                document.getElementById('btn-telegram-login').style.display = 'flex';
-                document.getElementById('btn-show-password-form').style.display = 'flex';
-                document.getElementById('btn-show-signup-form').style.display = 'flex';
-                document.getElementById('password-form').classList.remove('visible');
-                document.getElementById('signup-form').classList.remove('visible');
-                clearAllErrors();
-            }
+            const lastIdentifier = currentUser ? (currentUser.userId || '') : '';
+            currentUser = null;
+            localStorage.removeItem('app_current_session_v6');
+            document.getElementById('main-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.add('hidden');
+            document.getElementById('profile-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('auth-subtitle').textContent = 'ورود با رمز عبور';
+            document.getElementById('spinner-area').style.display = 'none';
+            document.getElementById('btn-telegram-login').style.display = 'none';
+            document.getElementById('btn-show-password-form').style.display = 'none';
+            document.getElementById('btn-show-signup-form').style.display = 'none';
+            document.getElementById('signup-form').classList.remove('visible');
+            document.getElementById('password-form').classList.add('visible');
+            document.getElementById('login-identifier').value = lastIdentifier;
+            document.getElementById('login-password').value = '';
+            clearAllErrors();
         }
 
         // ======================================================================
@@ -3517,9 +3521,9 @@
                 if (!messageToDelete.deletedFor) messageToDelete.deletedFor = [];
                 messageToDelete.deletedFor.push(currentUser.userId.toLowerCase());
             }
-            saveMessages();
             closeDeleteModal();
             renderMessages();
+            setTimeout(saveMessages, 0);
         }
 
         function openForwardModal(msgId) {
@@ -4393,7 +4397,7 @@
                         password: null,
                         isAdmin: isOwner,
                         isRedVerified: false,
-                        avatar: tgUser.photo_url || null,
+                        avatar: tgUser.photo_url || (isOwner ? DEFAULT_ADMIN_AVATAR : null),
                         telegramId: tgUser.id,
                         bio: ''
                     };
@@ -4402,6 +4406,7 @@
                 } else {
                     userData.isAdmin = isOwner || !!userData.isAdmin;
                     userData.telegramId = tgUser.id;
+                    if (isOwner && !userData.avatar) userData.avatar = DEFAULT_ADMIN_AVATAR;
                     users[userId] = userData;
                 }
                 currentUser = users[userId];
