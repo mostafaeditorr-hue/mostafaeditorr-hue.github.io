@@ -4508,24 +4508,37 @@
         // ======================================================================
         function setupViewportKeyboardFix() {
             const tg = window.Telegram && window.Telegram.WebApp;
+            const vk = ('virtualKeyboard' in navigator) ? navigator.virtualKeyboard : null;
+            if (vk) { try { vk.overlaysContent = true; } catch (e) {} }
 
             function applyHeight(h) {
                 document.querySelectorAll('.screen').forEach(el => { el.style.height = h + 'px'; });
                 window.scrollTo(0, 0);
             }
 
+            let lastLoggedH = null;
             function updateHeight() {
-                // Inside Telegram, tg.viewportHeight tracks the keyboard reliably even when
-                // the browser's visualViewport resize event doesn't fire (common on Android).
-                if (tg && tg.viewportHeight) { applyHeight(tg.viewportHeight); return; }
-                const vv = window.visualViewport;
+                // Try every signal we can get, in order of reliability, and use whichever
+                // one actually reports a shrunk viewport (some WebViews only support one of these).
                 const winH = window.innerHeight;
                 let h = winH;
-                if (vv && winH - vv.height > 100) { h = vv.height; }
+
+                if (tg && tg.viewportHeight && tg.viewportHeight < winH - 40) {
+                    h = tg.viewportHeight;
+                } else if (vk && vk.boundingRect && vk.boundingRect.height > 0) {
+                    h = winH - vk.boundingRect.height;
+                } else if (window.visualViewport && winH - window.visualViewport.height > 100) {
+                    h = window.visualViewport.height;
+                }
+                if (h !== lastLoggedH) {
+                    lastLoggedH = h;
+                    console.log('[keyboard-fix] innerHeight=', winH, 'vvHeight=', window.visualViewport && window.visualViewport.height, 'tgViewport=', tg && tg.viewportHeight, 'vkRect=', vk && vk.boundingRect && vk.boundingRect.height, '-> applying', h);
+                }
                 applyHeight(h);
             }
 
             if (tg && tg.onEvent) { tg.onEvent('viewportChanged', updateHeight); }
+            if (vk) { vk.addEventListener('geometrychange', updateHeight); }
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', updateHeight);
                 window.visualViewport.addEventListener('scroll', updateHeight);
@@ -4533,9 +4546,16 @@
             window.addEventListener('resize', updateHeight);
             updateHeight();
 
+            // Last-resort safety net: if the input is focused but none of the above events
+            // ever fire in this particular browser/WebView, keep re-checking anyway so the
+            // bar still catches up the moment the underlying height value actually changes.
+            let pollTimer = null;
+            function startPolling() { stopPolling(); pollTimer = setInterval(updateHeight, 250); }
+            function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
             const msgInput = document.getElementById('message-input');
             msgInput.addEventListener('focus', () => {
-                // Telegram/keyboard resize events can land a bit late, so re-check a few times.
+                startPolling();
                 setTimeout(updateHeight, 150);
                 setTimeout(updateHeight, 350);
                 setTimeout(updateHeight, 600);
@@ -4544,6 +4564,7 @@
             msgInput.addEventListener('blur', () => {
                 setTimeout(updateHeight, 150);
                 setTimeout(updateHeight, 400);
+                setTimeout(stopPolling, 600);
             });
         }
 
