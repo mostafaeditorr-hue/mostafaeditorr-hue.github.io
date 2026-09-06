@@ -347,6 +347,27 @@
         }
         .auth-footer a { color: var(--blue); text-decoration: none; }
         .auth-footer a:hover { text-decoration: underline; }
+        .error-msg {
+            color: var(--red);
+            font-size: 12px;
+            margin-top: 6px;
+            text-align: right;
+            padding: 4px 8px;
+            background: rgba(255, 59, 48, 0.08);
+            border-radius: 6px;
+            border-right: 2px solid var(--red);
+            display: none;
+        }
+        .error-msg.show { display: block; animation: fade-up 0.25s ease both; }
+        .telegram-login-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+        .telegram-login-hint i { color: var(--blue); margin-left: 4px; }
         @media (max-width: 420px) {
             .auth-card { padding: 28px 18px 24px; }
             .auth-logo { width: 68px; height: 68px; font-size: 34px; border-radius: 20px; }
@@ -1440,6 +1461,10 @@
         }
         .btn-submit-signup:hover { background: #28a745; transform: scale(1.01); }
         .btn-submit-signup:active { transform: scale(0.97); }
+        .input-error {
+            border-color: var(--red) !important;
+            box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15) !important;
+        }
     </style>
 </head>
 <body>
@@ -1460,6 +1485,7 @@
                 <button class="btn-telegram-login" id="btn-telegram-login" onclick="handleTelegramLogin()">
                     <i class="fab fa-telegram-plane"></i> ورود با تلگرام
                 </button>
+                <div id="telegram-login-error" class="error-msg"></div>
                 <button class="btn-password-login" id="btn-show-password-form" onclick="showPasswordForm()">
                     <i class="fa fa-key"></i> ورود با رمز عبور
                 </button>
@@ -1470,11 +1496,14 @@
                     <div class="input-group">
                         <label>نام کاربری یا آیدی</label>
                         <input type="text" id="login-identifier" placeholder="مثال: username" dir="ltr">
+                        <div id="login-identifier-error" class="error-msg"></div>
                     </div>
                     <div class="input-group">
                         <label>رمز عبور</label>
                         <input type="password" id="login-password" placeholder="رمز خود را وارد کنید" dir="ltr">
+                        <div id="login-password-error" class="error-msg"></div>
                     </div>
+                    <div id="login-form-error" class="error-msg"></div>
                     <button class="btn-submit-password" onclick="handlePasswordLogin()">
                         <i class="fa fa-sign-in-alt"></i> ورود
                     </button>
@@ -1486,23 +1515,29 @@
                     <div class="input-group">
                         <label>نام</label>
                         <input type="text" id="signup-name" placeholder="نام خود را وارد کنید">
+                        <div id="signup-name-error" class="error-msg"></div>
                     </div>
                     <div class="input-group">
                         <label>نام خانوادگی</label>
                         <input type="text" id="signup-family" placeholder="نام خانوادگی">
+                        <div id="signup-family-error" class="error-msg"></div>
                     </div>
                     <div class="input-group">
                         <label>آیدی (بدون @)</label>
                         <input type="text" id="signup-userid" placeholder="مثال: myid" dir="ltr">
+                        <div id="signup-userid-error" class="error-msg"></div>
                     </div>
                     <div class="input-group">
                         <label>نام کاربری</label>
                         <input type="text" id="signup-username" placeholder="نام کاربری">
+                        <div id="signup-username-error" class="error-msg"></div>
                     </div>
                     <div class="input-group">
                         <label>رمز عبور</label>
                         <input type="password" id="signup-password" placeholder="رمز قوی انتخاب کنید">
+                        <div id="signup-password-error" class="error-msg"></div>
                     </div>
+                    <div id="signup-form-error" class="error-msg"></div>
                     <button class="btn-submit-signup" onclick="handleSignup()">
                         <i class="fa fa-user-plus"></i> ثبت‌نام
                     </button>
@@ -1914,6 +1949,33 @@
         let chatMetaData = JSON.parse(localStorage.getItem('app_chat_meta_v6')) || {};
         let chatLockStatus = JSON.parse(localStorage.getItem('app_chat_locks_v6')) || { 'news_channel': true, 'support_group': false };
 
+        // ======================================================================
+        // HELPERS
+        // ======================================================================
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.textContent = message;
+            el.classList.add('show');
+        }
+
+        function hideError(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.classList.remove('show');
+            el.textContent = '';
+        }
+
+        function clearAllErrors() {
+            document.querySelectorAll('.error-msg').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+            document.querySelectorAll('.input-group input').forEach(el => {
+                el.classList.remove('input-error');
+            });
+        }
+
         function getSavedMessagesChatId() { return `saved_${currentUser.userId.toLowerCase()}`; }
         function getStaticChats() {
             return [
@@ -2004,6 +2066,7 @@
         // AUTH
         // ======================================================================
         function showPasswordForm() {
+            clearAllErrors();
             document.getElementById('password-form').classList.add('visible');
             document.getElementById('signup-form').classList.remove('visible');
             document.getElementById('btn-telegram-login').style.display = 'none';
@@ -2011,8 +2074,10 @@
             document.getElementById('btn-show-signup-form').style.display = 'none';
             document.getElementById('spinner-area').style.display = 'none';
             document.getElementById('auth-subtitle').textContent = 'ورود با رمز عبور';
+            document.getElementById('telegram-login-error').classList.remove('show');
         }
         function hidePasswordForm() {
+            clearAllErrors();
             document.getElementById('password-form').classList.remove('visible');
             document.getElementById('btn-telegram-login').style.display = 'flex';
             document.getElementById('btn-show-password-form').style.display = 'flex';
@@ -2021,9 +2086,13 @@
             document.getElementById('auth-subtitle').textContent = 'به جمع ما بپیوندید';
             document.getElementById('login-identifier').value = '';
             document.getElementById('login-password').value = '';
+            hideError('login-identifier-error');
+            hideError('login-password-error');
+            hideError('login-form-error');
         }
 
         function showSignupForm() {
+            clearAllErrors();
             document.getElementById('signup-form').classList.add('visible');
             document.getElementById('password-form').classList.remove('visible');
             document.getElementById('btn-telegram-login').style.display = 'none';
@@ -2031,8 +2100,10 @@
             document.getElementById('btn-show-signup-form').style.display = 'none';
             document.getElementById('spinner-area').style.display = 'none';
             document.getElementById('auth-subtitle').textContent = 'ثبت‌نام در تلگرام';
+            document.getElementById('telegram-login-error').classList.remove('show');
         }
         function hideSignupForm() {
+            clearAllErrors();
             document.getElementById('signup-form').classList.remove('visible');
             document.getElementById('btn-telegram-login').style.display = 'flex';
             document.getElementById('btn-show-password-form').style.display = 'flex';
@@ -2047,22 +2118,47 @@
         }
 
         function handleSignup() {
+            clearAllErrors();
             const name = document.getElementById('signup-name').value.trim();
             const family = document.getElementById('signup-family').value.trim();
             const userId = document.getElementById('signup-userid').value.trim().toLowerCase();
             const username = document.getElementById('signup-username').value.trim();
             const password = document.getElementById('signup-password').value.trim();
 
-            if (!name || !family || !userId || !username || !password) {
-                alert('لطفاً تمام فیلدها را پر کنید.');
-                return;
+            let hasError = false;
+
+            if (!name) { showError('signup-name-error', 'نام خود را وارد کنید');
+                document.getElementById('signup-name').classList.add('input-error');
+                hasError = true; }
+            if (!family) { showError('signup-family-error', 'نام خانوادگی را وارد کنید');
+                document.getElementById('signup-family').classList.add('input-error');
+                hasError = true; }
+            if (!userId) { showError('signup-userid-error', 'آیدی را وارد کنید');
+                document.getElementById('signup-userid').classList.add('input-error');
+                hasError = true; } else if (userId.includes('@')) { showError('signup-userid-error', 'آیدی را بدون @ وارد کنید');
+                document.getElementById('signup-userid').classList.add('input-error');
+                hasError = true; } else if (userId.length < 5) { showError('signup-userid-error', 'آیدی باید حداقل ۵ حرف باشد');
+                document.getElementById('signup-userid').classList.add('input-error');
+                hasError = true; } else if (userId === 'admin') { showError('signup-userid-error', 'این آیدی غیرقابل ثبت است');
+                document.getElementById('signup-userid').classList.add('input-error');
+                hasError = true; } else if (users[userId]) { showError('signup-userid-error', 'این آیدی قبلاً ثبت شده است');
+                document.getElementById('signup-userid').classList.add('input-error');
+                hasError = true; }
+
+            if (!username) { showError('signup-username-error', 'نام کاربری را وارد کنید');
+                document.getElementById('signup-username').classList.add('input-error');
+                hasError = true; } else {
+                const existsUsername = Object.values(users).some(u => u.username && u.username.toLowerCase() === username.toLowerCase());
+                if (existsUsername) { showError('signup-username-error', 'این نام کاربری قبلاً استفاده شده است');
+                    document.getElementById('signup-username').classList.add('input-error');
+                    hasError = true; }
             }
-            if (userId.includes('@')) { alert('آیدی را بدون @ وارد کنید.'); return; }
-            if (userId.length < 5) { alert('آیدی باید حداقل ۵ حرف باشد.'); return; }
-            if (userId === 'admin') { alert('این آیدی غیرقابل ثبت است.'); return; }
-            if (users[userId]) { alert('این آیدی قبلاً ثبت شده است!'); return; }
-            const existsUsername = Object.values(users).some(u => u.username && u.username.toLowerCase() === username.toLowerCase());
-            if (existsUsername) { alert('این نام کاربری قبلاً استفاده شده است!'); return; }
+
+            if (!password) { showError('signup-password-error', 'رمز عبور را وارد کنید');
+                document.getElementById('signup-password').classList.add('input-error');
+                hasError = true; }
+
+            if (hasError) return;
 
             const newUser = {
                 name,
@@ -2085,14 +2181,28 @@
         }
 
         function handlePasswordLogin() {
+            clearAllErrors();
             const identifier = document.getElementById('login-identifier').value.trim().toLowerCase();
             const password = document.getElementById('login-password').value.trim();
-            if (!identifier || !password) { alert('لطفاً نام کاربری و رمز عبور را وارد کنید.'); return; }
+
+            let hasError = false;
+            if (!identifier) {
+                showError('login-identifier-error', 'نام کاربری یا آیدی را وارد کنید');
+                document.getElementById('login-identifier').classList.add('input-error');
+                hasError = true;
+            }
+            if (!password) {
+                showError('login-password-error', 'رمز عبور را وارد کنید');
+                document.getElementById('login-password').classList.add('input-error');
+                hasError = true;
+            }
+            if (hasError) return;
+
             const user = users[identifier];
             if (user && user.password === password) {
                 if (user.suspendedUntil && user.suspendedUntil > Date.now()) {
                     const days = Math.ceil((user.suspendedUntil - Date.now()) / (24 * 60 * 60 * 1000));
-                    alert(`حساب شما تا ${days} روز دیگر تعلیق شده است.`);
+                    showError('login-form-error', `حساب شما تا ${days} روز دیگر تعلیق شده است.`);
                     return;
                 }
                 currentUser = user;
@@ -2109,30 +2219,27 @@
                 initApp();
                 showToast('ورود مدیریتی!');
             } else {
-                alert('❌ نام کاربری یا رمز عبور اشتباه است.');
+                showError('login-form-error', '❌ نام کاربری یا رمز عبور اشتباه است.');
             }
         }
 
         function handleTelegramLogin() {
-            tryTelegramAutoLogin(function(handled) {
-                if (!handled) { alert('⚠️ ورود با تلگرام امکان‌پذیر نیست.\nلطفاً از گزینه "ورود با رمز عبور" استفاده کنید.'); }
-            });
-        }
-
-        function tryTelegramAutoLogin(callback) {
+            clearAllErrors();
             const tg = window.Telegram && window.Telegram.WebApp;
             const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-            if (!tgUser) { callback(false); return; }
+
+            if (!tgUser) {
+                showError('telegram-login-error', '⚠️ شما در محیط تلگرام نیستید.');
+                return;
+            }
+
             tg.ready();
             tg.expand();
-            const slowTimer = setTimeout(() => {
-                const title = document.getElementById('auth-title');
-                if (title) title.innerText = 'اتصال برقرار نشد — VPN خود را روشن کنید';
-            }, 5000);
+
             const isOwner = String(tgUser.id) === String(OWNER_TELEGRAM_ID);
             const userId = isOwner ? 'admin' : (tgUser.username ? tgUser.username.toLowerCase() : String(tgUser.id));
+
             db.ref('app_users_v6/' + userId).once('value').then(function(snapshot) {
-                clearTimeout(slowTimer);
                 let userData = snapshot.val();
                 if (!userData) {
                     userData = {
@@ -2157,9 +2264,9 @@
                 currentUser = users[userId];
                 persistSession();
                 initApp();
-                callback(true);
-            }).catch(function() { clearTimeout(slowTimer);
-                callback(false); });
+            }).catch(function() {
+                showError('telegram-login-error', '⚠️ خطا در اتصال. لطفاً VPN خود را بررسی کنید.');
+            });
         }
 
         function initApp() {
@@ -2213,6 +2320,7 @@
                 document.getElementById('btn-show-signup-form').style.display = 'flex';
                 document.getElementById('password-form').classList.remove('visible');
                 document.getElementById('signup-form').classList.remove('visible');
+                clearAllErrors();
             }
         }
 
@@ -3411,6 +3519,7 @@
         // SETTINGS / PROFILE
         // ======================================================================
         function openSettings() {
+            clearAllErrors();
             document.getElementById('setting-name').value = currentUser.name || '';
             document.getElementById('setting-family').value = currentUser.family || '';
             document.getElementById('setting-userid').value = currentUser.userId || '';
@@ -3884,7 +3993,7 @@
             window.sendTelegramNotification = sendTelegramNotification;
         });
 
-        console.log('💬 تلگرام - نسخه با اعلان‌های ربات + ساخت اکانت داخلی');
+        console.log('💬 تلگرام - نسخه با اعتبارسنجی نمایش خطا در فرم');
     </script>
 </body>
 </html>
