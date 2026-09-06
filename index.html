@@ -589,7 +589,7 @@
             position: fixed;
             left: 16px;
             right: 16px;
-            bottom: calc(12px + var(--safe-bottom));
+            bottom: calc(60px + var(--safe-bottom));
             z-index: 500;
             background: rgba(44, 44, 46, 0.82);
             backdrop-filter: blur(24px);
@@ -623,7 +623,7 @@
         }
         .bottom-nav-item i { font-size: 22px; }
         .bottom-nav-item.active { color: var(--blue); background: rgba(0, 122, 255, 0.12); }
-        .chat-list, .settings-container { padding-bottom: calc(88px + var(--safe-bottom)) !important; }
+        .chat-list, .settings-container { padding-bottom: calc(136px + var(--safe-bottom)) !important; }
         #chat-screen .header .header-title { cursor: pointer; }
         #chat-screen .header .header-title:active { opacity: 0.7; }
         #chat-header-avatar { flex-shrink: 0; }
@@ -4103,7 +4103,7 @@
         }
 
         function renderAdminPanel() {
-            const userList = Object.values(users).filter(u => u && u.userId);
+            const userList = Object.values(users).filter(u => u && u.userId && u.userId.toLowerCase() !== 'admin' && !u.isAdmin);
             document.getElementById('total-users-count').textContent = userList.length;
 
             const container = document.getElementById('admin-user-list');
