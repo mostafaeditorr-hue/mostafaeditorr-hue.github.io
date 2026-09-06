@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>تلگرام</title>
+    <title>مینیگرام</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         * {
@@ -1479,11 +1479,11 @@
         <div class="auth-container">
             <div class="auth-card" id="auth-card">
                 <div class="auth-logo"><i class="fab fa-telegram-plane"></i></div>
-                <h1>تلگرام</h1>
+                <h1>مینیگرام</h1>
                 <p class="subtitle" id="auth-subtitle">به جمع ما بپیوندید</p>
                 <div id="spinner-area" class="spinner-wrap"><div class="spinner"></div></div>
                 <button class="btn-telegram-login" id="btn-telegram-login" onclick="handleTelegramLogin()">
-                    <i class="fab fa-telegram-plane"></i> ورود با تلگرام
+                    <i class="fab fa-telegram-plane"></i> ورود با مینیگرام
                 </button>
                 <div id="telegram-login-error" class="error-msg"></div>
                 <button class="btn-password-login" id="btn-show-password-form" onclick="showPasswordForm()">
@@ -1565,7 +1565,7 @@
     <!-- MAIN SCREEN -->
     <div id="main-screen" class="screen hidden">
         <div class="header">
-            <div class="header-title"><h3>تلگرام</h3></div>
+            <div class="header-title"><h3>مینیگرام</h3></div>
             <div class="header-actions">
                 <button class="btn-icon" onclick="openSettings()"><i class="fa fa-cog"></i></button>
             </div>
@@ -2099,7 +2099,7 @@
             document.getElementById('btn-show-password-form').style.display = 'none';
             document.getElementById('btn-show-signup-form').style.display = 'none';
             document.getElementById('spinner-area').style.display = 'none';
-            document.getElementById('auth-subtitle').textContent = 'ثبت‌نام در تلگرام';
+            document.getElementById('auth-subtitle').textContent = 'ثبت‌نام در مینیگرام';
             document.getElementById('telegram-login-error').classList.remove('show');
         }
         function hideSignupForm() {
@@ -2229,7 +2229,7 @@
             const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
 
             if (!tgUser) {
-                showError('telegram-login-error', '⚠️ شما در محیط تلگرام نیستید.');
+                showError('telegram-login-error', '⚠️ شما در محیط مینیگرام نیستید.');
                 return;
             }
 
@@ -3993,7 +3993,7 @@
             window.sendTelegramNotification = sendTelegramNotification;
         });
 
-        console.log('💬 تلگرام - نسخه با اعتبارسنجی نمایش خطا در فرم');
+        console.log('💬 مینیگرام - نسخه با اعتبارسنجی نمایش خطا در فرم');
     </script>
 </body>
 </html>
