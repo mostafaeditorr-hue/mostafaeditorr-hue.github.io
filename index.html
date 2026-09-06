@@ -2128,6 +2128,14 @@
         }
         const db = { ref: dbRef };
 
+        // Ask Telegram's Mini App host to report its real size ASAP - without this,
+        // Telegram's own viewport/keyboard events are unreliable, which is the real
+        // cause of the input bar not following the keyboard.
+        (function initTelegramWebApp() {
+            const tg = window.Telegram && window.Telegram.WebApp;
+            if (tg) { tg.ready(); tg.expand(); }
+        })();
+
         const OWNER_TELEGRAM_ID = '8921602643';
         const DEFAULT_ADMIN_AVATAR = 'https://cdn.imgurl.ir/uploads/h029383_nody-----1633209572.png';
         const NOTIFY_WORKER_URL = '';
@@ -2268,6 +2276,8 @@
 
         // Real-time presence via Supabase Realtime Presence (no Firebase onDisconnect needed:
         // the websocket drop itself is what tells every other client this user left).
+        // Only "track" while the app is actually the foreground/visible tab - a background
+        // tab or a minimized Telegram Mini App should NOT count as online.
         function setupPresence() {
             if (!currentUser || !currentUser.userId) return;
             const myUid = currentUser.userId.toLowerCase();
@@ -2285,14 +2295,47 @@
             }).subscribe(function(status, err) {
                 console.log('[presence] channel status:', status, err || '');
                 if (status === 'SUBSCRIBED') {
-                    presenceChannel.track({ online_at: Date.now() }).then(function(res) {
-                        console.log('[presence] track result:', res);
-                    });
+                    if (isAppActive()) { trackPresence(); }
                 }
                 if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     console.error('[presence] failed to connect to realtime channel:', err);
                 }
             });
+            setupAppActiveListeners();
+        }
+
+        function isAppActive() {
+            const tg = window.Telegram && window.Telegram.WebApp;
+            if (tg && typeof tg.isActive === 'boolean') { return tg.isActive && document.visibilityState === 'visible'; }
+            return document.visibilityState === 'visible';
+        }
+
+        function trackPresence() {
+            if (!presenceChannel) return;
+            presenceChannel.track({ online_at: Date.now() }).then(function(res) {
+                console.log('[presence] track result:', res);
+            });
+        }
+
+        function untrackPresence() {
+            if (!presenceChannel) return;
+            presenceChannel.untrack();
+        }
+
+        let appActiveListenersBound = false;
+        function setupAppActiveListeners() {
+            if (appActiveListenersBound) return;
+            appActiveListenersBound = true;
+            document.addEventListener('visibilitychange', function() {
+                if (isAppActive()) { trackPresence(); } else { untrackPresence(); }
+            });
+            window.addEventListener('pagehide', untrackPresence);
+            window.addEventListener('beforeunload', untrackPresence);
+            const tg = window.Telegram && window.Telegram.WebApp;
+            if (tg && tg.onEvent) {
+                tg.onEvent('activated', function() { trackPresence(); });
+                tg.onEvent('deactivated', function() { untrackPresence(); });
+            }
         }
 
         function watchPresence(userId) {
@@ -4464,14 +4507,25 @@
         // VIEWPORT KEYBOARD FIX
         // ======================================================================
         function setupViewportKeyboardFix() {
+            const tg = window.Telegram && window.Telegram.WebApp;
+
+            function applyHeight(h) {
+                document.querySelectorAll('.screen').forEach(el => { el.style.height = h + 'px'; });
+                window.scrollTo(0, 0);
+            }
+
             function updateHeight() {
+                // Inside Telegram, tg.viewportHeight tracks the keyboard reliably even when
+                // the browser's visualViewport resize event doesn't fire (common on Android).
+                if (tg && tg.viewportHeight) { applyHeight(tg.viewportHeight); return; }
                 const vv = window.visualViewport;
                 const winH = window.innerHeight;
                 let h = winH;
                 if (vv && winH - vv.height > 100) { h = vv.height; }
-                document.querySelectorAll('.screen').forEach(el => { el.style.height = h + 'px'; });
-                if (vv) window.scrollTo(0, 0);
+                applyHeight(h);
             }
+
+            if (tg && tg.onEvent) { tg.onEvent('viewportChanged', updateHeight); }
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', updateHeight);
                 window.visualViewport.addEventListener('scroll', updateHeight);
@@ -4479,9 +4533,17 @@
             window.addEventListener('resize', updateHeight);
             updateHeight();
 
-            document.getElementById('message-input').addEventListener('focus', () => {
-                setTimeout(updateHeight, 300);
-                setTimeout(() => { document.getElementById('message-input').scrollIntoView({ block: 'end', behavior: 'smooth' }); }, 350);
+            const msgInput = document.getElementById('message-input');
+            msgInput.addEventListener('focus', () => {
+                // Telegram/keyboard resize events can land a bit late, so re-check a few times.
+                setTimeout(updateHeight, 150);
+                setTimeout(updateHeight, 350);
+                setTimeout(updateHeight, 600);
+                setTimeout(() => { msgInput.scrollIntoView({ block: 'end', behavior: 'smooth' }); }, 400);
+            });
+            msgInput.addEventListener('blur', () => {
+                setTimeout(updateHeight, 150);
+                setTimeout(updateHeight, 400);
             });
         }
 
