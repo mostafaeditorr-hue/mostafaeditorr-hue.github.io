@@ -1470,7 +1470,7 @@
 <body>
 
     <div id="vpn-warning-banner" class="hidden">
-        ⚠️ فیلترشکن (VPN) شما خاموش است. برای اتصال کامل به سرور، لطفاً آن را روشن کنید.
+        ⚠️ اینترنت شما خاموش است. برای اتصال کامل به سرور، لطفاً آن را روشن کنید.
     </div>
 
     <!-- AUTH SCREEN -->
@@ -1483,7 +1483,7 @@
                 <p class="subtitle" id="auth-subtitle">به جمع ما بپیوندید</p>
                 <div id="spinner-area" class="spinner-wrap"><div class="spinner"></div></div>
                 <button class="btn-telegram-login" id="btn-telegram-login" onclick="handleTelegramLogin()">
-                    <i class="fab fa-telegram-plane"></i> ورود با مینیگرام
+                    <i class="fab fa-telegram-plane"></i> ورود با تلگرام
                 </button>
                 <div id="telegram-login-error" class="error-msg"></div>
                 <button class="btn-password-login" id="btn-show-password-form" onclick="showPasswordForm()">
@@ -1553,7 +1553,7 @@
                 </div>
                 <div class="vpn-banner hidden" id="vpn-banner">
                     <i class="fa fa-exclamation-triangle"></i>
-                    <span>فیلترشکن (VPN) شما خاموش است. برای اتصال مطمئن، آن را روشن کنید.</span>
+                    <span>اینترنت شما خاموش است. برای اتصال مطمئن، آن را روشن کنید.</span>
                 </div>
                 <div class="auth-footer">
                     <span>نسخه ۲.۰ · <a href="#" onclick="event.preventDefault()">حریم خصوصی</a></span>
@@ -2229,7 +2229,7 @@
             const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
 
             if (!tgUser) {
-                showError('telegram-login-error', '⚠️ شما در محیط مینیگرام نیستید.');
+                showError('telegram-login-error', '⚠️ شما در محیط تلگرام نیستید.');
                 return;
             }
 
