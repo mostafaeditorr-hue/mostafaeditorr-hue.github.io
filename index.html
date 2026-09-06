@@ -338,6 +338,25 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
         }
+        .presence-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+        .presence-dot.online { background: var(--green); box-shadow: 0 0 6px rgba(52, 199, 89, 0.5); }
+        .presence-dot.offline { background: var(--red); }
+        .avatar-badge-dot {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--green);
+            border: 2px solid var(--bg-primary);
+            box-shadow: 0 0 4px rgba(52, 199, 89, 0.6);
+            z-index: 2;
+        }
+        .chat-avatar .avatar-badge-dot { width: 11px; height: 11px; }
+        #chat-header-avatar { position: relative; }
+        #chat-header-avatar .avatar-badge-dot { width: 10px; height: 10px; border-width: 2px; }
+        .contact-profile-avatar-wrap .avatar-badge-dot { width: 17px; height: 17px; border-width: 3px; border-color: var(--bg-card); bottom: 2px; left: 2px; }
         .vpn-banner {
             background: rgba(255, 59, 48, 0.12);
             border: 1px solid rgba(255, 59, 48, 0.15);
@@ -2110,7 +2129,7 @@
         const db = { ref: dbRef };
 
         const OWNER_TELEGRAM_ID = '8921602643';
-        const DEFAULT_ADMIN_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij4KPGNpcmNsZSBjeD0iNjQiIGN5PSI2NCIgcj0iNjQiIGZpbGw9IiMzNjlhZmYiLz4KPHBhdGggZD0iTTY0IDM0Yy0xNiAwLTI4IDEyLTI4IDI3djEwYTYgNiAwIDAgMCA2IDZoNFY1N2gtNGMwLTEyIDEwLTIxIDIyLTIxczIyIDkgMjIgMjFoLTR2MjBoNGE2IDYgMCAwIDAgNi02VjYxYzAtMTUtMTItMjctMjgtMjd6IiBmaWxsPSIjZmZmZmZmIi8+CjxyZWN0IHg9IjM0IiB5PSI2MyIgd2lkdGg9IjEwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgo8cmVjdCB4PSI4NCIgeT0iNjMiIHdpZHRoPSIxMCIgaGVpZ2h0PSIyMCIgcng9IjQiIGZpbGw9IiNmZmZmZmYiLz4KPHBhdGggZD0iTTQyIDg4YzAgOCAxMCAxNCAyMiAxNCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
+        const DEFAULT_ADMIN_AVATAR = 'https://cdn.imgurl.ir/uploads/h029383_nody-----1633209572.png';
         const NOTIFY_WORKER_URL = '';
         const BOT_TOKEN = '8529606750:AAFvCr2z2YByipI_UvR_mNnhEIwmXlTLf3c';
         const TELEGRAM_API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
@@ -2221,8 +2240,90 @@
             reader.readAsDataURL(file);
         }
         function saveMessages() {
-            localStorage.setItem('app_messages_v6', JSON.stringify(messages));
-            db.ref('app_messages_v6').set(messages);
+            setTimeout(function() {
+                localStorage.setItem('app_messages_v6', JSON.stringify(messages));
+                db.ref('app_messages_v6').set(messages);
+            }, 0);
+        }
+        function pushUnreadKey(key) {
+            localStorage.setItem('app_unread_v6', JSON.stringify(unreadCounts));
+            db.ref('app_unread_v6/' + key).set(unreadCounts[key] || 0);
+        }
+
+        // ======================================================================
+        // PRESENCE (آنلاین/آفلاین)
+        // ======================================================================
+        let onlinePresence = {}; // { [userId_lowercase]: true }
+        let presenceChannel = null;
+        let watchedPresenceUserId = null;
+
+        function isUserOnline(userId) {
+            if (!userId) return false;
+            return !!onlinePresence[userId.toLowerCase()];
+        }
+
+        function avatarBadgeHtml(userId) {
+            return isUserOnline(userId) ? '<span class="avatar-badge-dot"></span>' : '';
+        }
+
+        // Real-time presence via Supabase Realtime Presence (no Firebase onDisconnect needed:
+        // the websocket drop itself is what tells every other client this user left).
+        function setupPresence() {
+            if (!currentUser || !currentUser.userId) return;
+            const myUid = currentUser.userId.toLowerCase();
+            if (presenceChannel) { supabaseClient.removeChannel(presenceChannel); presenceChannel = null; }
+            presenceChannel = supabaseClient.channel('app_presence_v6', {
+                config: { presence: { key: myUid } }
+            });
+            presenceChannel.on('presence', { event: 'sync' }, function() {
+                const state = presenceChannel.presenceState();
+                const nowOnline = {};
+                Object.keys(state).forEach(function(uid) { nowOnline[uid] = true; });
+                onlinePresence = nowOnline;
+                console.log('[presence] sync ->', Object.keys(nowOnline));
+                refreshPresenceUI();
+            }).subscribe(function(status, err) {
+                console.log('[presence] channel status:', status, err || '');
+                if (status === 'SUBSCRIBED') {
+                    presenceChannel.track({ online_at: Date.now() }).then(function(res) {
+                        console.log('[presence] track result:', res);
+                    });
+                }
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    console.error('[presence] failed to connect to realtime channel:', err);
+                }
+            });
+        }
+
+        function watchPresence(userId) {
+            watchedPresenceUserId = (userId || '').toLowerCase();
+            renderPresenceSubtitle();
+        }
+        function stopWatchingPresence() { watchedPresenceUserId = null; }
+
+        function renderPresenceSubtitle() {
+            if (!watchedPresenceUserId) return;
+            const subtitle = document.getElementById('current-chat-subtitle');
+            if (!subtitle) return;
+            const online = isUserOnline(watchedPresenceUserId);
+            subtitle.innerHTML = online ?
+                '<span class="presence-dot online"></span>آنلاین' :
+                '<span class="presence-dot offline"></span>آفلاین';
+        }
+
+        // Called whenever presence state changes so every visible avatar/badge stays in sync,
+        // the same way Telegram flips the green dot live without a page refresh.
+        function refreshPresenceUI() {
+            renderPresenceSubtitle();
+            if (typeof renderChatList === 'function' && !document.getElementById('main-screen').classList.contains('hidden')) {
+                renderChatList();
+            }
+            const headerBadge = document.getElementById('chat-header-avatar-badge');
+            if (headerBadge) {
+                const online = currentChat && currentChat.type === 'direct' && isUserOnline(currentChat.id);
+                headerBadge.classList.toggle('hidden', !online);
+            }
+            if (currentProfileTargetId) { renderContactProfile(currentProfileTargetId); }
         }
         function saveUsers(changedUserId, deletedUserId) {
             localStorage.setItem('app_users_v6', JSON.stringify(users));
@@ -2524,6 +2625,7 @@
         function initApp() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-screen').classList.remove('hidden');
+            setupPresence();
             renderChatList();
         }
 
@@ -2580,6 +2682,13 @@
 
         function logout() {
             const lastIdentifier = currentUser ? (currentUser.userId || '') : '';
+            if (presenceChannel) {
+                presenceChannel.untrack();
+                supabaseClient.removeChannel(presenceChannel);
+                presenceChannel = null;
+            }
+            onlinePresence = {};
+            stopWatchingPresence();
             currentUser = null;
             localStorage.removeItem('app_current_session_v6');
             document.getElementById('main-screen').classList.add('hidden');
@@ -2687,11 +2796,13 @@
                 if (hasReactionAlert) metaHtml += `<span class="reaction-alert">❤️</span>`;
                 if (hasReplyAlert) metaHtml += `<span class="reply-alert"><i class="fa fa-reply"></i></span>`;
 
+                const badgeHtml = chat.type === 'direct' ? avatarBadgeHtml(chat.id) : '';
+
                 const div = document.createElement('div');
                 div.className = 'chat-item';
                 div.onclick = () => openChat(chat.id, chat.title, chat.type, chat.isVerified, chat.isRedVerified);
                 div.innerHTML = `
-                    <div class="chat-avatar">${avatarHtml}</div>
+                    <div class="chat-avatar">${avatarHtml}${badgeHtml}</div>
                     <div class="chat-info">
                         <div class="name">${chat.title} ${verifiedHtml}</div>
                         <div class="last-msg">${lastMsgText}</div>
@@ -2739,8 +2850,7 @@
             if (count > 0 && chatMsgs.length >= count) { markUnreadIndex = chatMsgs.length - count; }
 
             unreadCounts[unreadKey] = 0;
-            localStorage.setItem('app_unread_v6', JSON.stringify(unreadCounts));
-            db.ref('app_unread_v6').set(unreadCounts);
+            pushUnreadKey(unreadKey);
 
             const myId = currentUser.userId.toLowerCase();
             if (reactionAlerts[myId]) delete reactionAlerts[myId][chatId.toLowerCase()];
@@ -2753,8 +2863,8 @@
 
             const subtitle = document.getElementById('current-chat-subtitle');
             subtitle.classList.remove('user-id-text');
-            if (type === 'direct') { subtitle.textContent = '@' + chatId;
-                subtitle.classList.add('user-id-text'); } else if (type === 'group') subtitle.textContent = 'گروه';
+            stopWatchingPresence();
+            if (type === 'direct') { watchPresence(chatId); } else if (type === 'group') subtitle.textContent = 'گروه';
             else if (type === 'channel') subtitle.textContent = 'کانال';
             else if (type === 'saved') subtitle.textContent = 'پیام‌های ذخیره‌شده';
             else subtitle.textContent = '';
@@ -2762,6 +2872,10 @@
             const avatarContainer = document.getElementById('chat-header-avatar');
             const customMeta = chatMetaData[chatId.toLowerCase()];
             if (customMeta && customMeta.avatar) { avatarContainer.innerHTML = `<img src="${customMeta.avatar}">`; } else if (type === 'direct' && users[chatId.toLowerCase()] && users[chatId.toLowerCase()].avatar) { avatarContainer.innerHTML = `<img src="${users[chatId.toLowerCase()].avatar}">`; } else { avatarContainer.innerHTML = ''; }
+            if (type === 'direct') {
+                const online = isUserOnline(chatId);
+                avatarContainer.insertAdjacentHTML('beforeend', `<span id="chat-header-avatar-badge" class="avatar-badge-dot${online ? '' : ' hidden'}"></span>`);
+            }
 
             const isLocked = chatLockStatus[chatId] || false;
             const inputArea = document.getElementById('input-area');
@@ -2830,6 +2944,7 @@
 
         function closeChat() {
             currentChat = null;
+            stopWatchingPresence();
             cancelReply();
             removePendingImage();
             removePendingVideo();
@@ -3113,16 +3228,16 @@
             if (currentChat.type === 'direct') {
                 const key = `${currentChat.id.toLowerCase()}_${currentUser.userId.toLowerCase()}`;
                 unreadCounts[key] = (unreadCounts[key] || 0) + 1;
+                pushUnreadKey(key);
             } else if (currentChat.type !== 'saved') {
                 Object.keys(users).forEach(uId => {
                     if (uId.toLowerCase() !== currentUser.userId.toLowerCase()) {
                         const key = `${uId.toLowerCase()}_${currentChat.id.toLowerCase()}`;
                         unreadCounts[key] = (unreadCounts[key] || 0) + 1;
+                        pushUnreadKey(key);
                     }
                 });
             }
-            localStorage.setItem('app_unread_v6', JSON.stringify(unreadCounts));
-            db.ref('app_unread_v6').set(unreadCounts);
 
             if (currentChat.type === 'direct' && currentChat.id.toLowerCase() !== currentUser.userId.toLowerCase()) {
                 const receiverId = currentChat.id.toLowerCase();
@@ -3659,16 +3774,16 @@
             if (targetChat && targetChat.type === 'direct') {
                 const key = `${targetId.toLowerCase()}_${currentUser.userId.toLowerCase()}`;
                 unreadCounts[key] = (unreadCounts[key] || 0) + 1;
+                pushUnreadKey(key);
             } else if (targetId !== getSavedMessagesChatId()) {
                 Object.keys(users).forEach(uId => {
                     if (uId.toLowerCase() !== currentUser.userId.toLowerCase()) {
                         const key = `${uId.toLowerCase()}_${targetId.toLowerCase()}`;
                         unreadCounts[key] = (unreadCounts[key] || 0) + 1;
+                        pushUnreadKey(key);
                     }
                 });
             }
-            localStorage.setItem('app_unread_v6', JSON.stringify(unreadCounts));
-            db.ref('app_unread_v6').set(unreadCounts);
 
             saveMessages();
             closeForwardModal();
@@ -3854,8 +3969,7 @@
             });
             const key = `admin_${myId.toLowerCase()}`;
             unreadCounts[key] = (unreadCounts[key] || 0) + 1;
-            localStorage.setItem('app_unread_v6', JSON.stringify(unreadCounts));
-            db.ref('app_unread_v6').set(unreadCounts);
+            pushUnreadKey(key);
             saveMessages();
             openChat('admin', 'پشتیبانی مرکزی', 'direct', true);
         }
@@ -3906,12 +4020,13 @@
             document.getElementById('contact-profile-id').textContent = '@' + data.userId;
 
             const avatarBox = document.getElementById('contact-profile-avatar');
+            const contactBadgeHtml = avatarBadgeHtml(uid);
             if (data.avatar) {
                 avatarBox.innerHTML =
-                    `<img src="${data.avatar}" class="profile-avatar" style="width:80px;height:80px;font-size:32px;">`;
+                    `<img src="${data.avatar}" class="profile-avatar" style="width:80px;height:80px;font-size:32px;">${contactBadgeHtml}`;
             } else {
                 avatarBox.innerHTML =
-                    `<div class="profile-avatar" style="width:80px;height:80px;font-size:32px;">${fullName.charAt(0)}</div>`;
+                    `<div class="profile-avatar" style="width:80px;height:80px;font-size:32px;">${fullName.charAt(0)}</div>${contactBadgeHtml}`;
             }
 
             const bioEl = document.getElementById('contact-profile-bio');
