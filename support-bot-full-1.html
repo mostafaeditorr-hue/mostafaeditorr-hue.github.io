@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎧 پنل پیشرفته مدیریت ربات و ارسال رسانه</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Vazirmatn', sans-serif; }
+        html, body { width: 100%; height: 100%; }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            min-height: 100vh;
+        }
+        .support-container {
+            width: 100%;
+            max-width: 650px;
+            height: 92vh;
+            background: rgba(15, 23, 42, 0.98);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .support-header {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(99, 102, 241, 0.15));
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .support-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #38bdf8, #a855f7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        .support-info h2 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #38bdf8, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+        .support-info p { font-size: 12px; color: #94a3b8; }
+        .online-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #34d399; }
+        .status-dot { width: 8px; height: 8px; background: #34d399; border-radius: 50%; }
+        
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .message { display: flex; gap: 12px; }
+        .msg-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+        }
+        .msg-content { max-width: 85%; display: flex; flex-direction: column; gap: 8px; }
+        .msg-text {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #cbd5e1; padding: 12px 14px; border-radius: 14px;
+            font-size: 13.5px; line-height: 1.6; word-break: break-word;
+        }
+        
+        .form-container {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 14px; padding: 12px; margin-top: 8px;
+        }
+        .form-title {
+            font-size: 12px; font-weight: 700; color: #38bdf8;
+            margin-bottom: 10px; text-transform: uppercase;
+        }
+        .form-group { margin-bottom: 10px; }
+        .form-label { font-size: 12px; color: #cbd5e1; margin-bottom: 4px; display: block; font-weight: 500; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%; padding: 8px 10px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 8px; color: #fff; font-size: 12px;
+            font-family: 'Vazirmatn', sans-serif; outline: none;
+        }
+        .form-textarea { resize: vertical; height: 60px; }
+        .form-select option { background: #0f172a; color: #fff; }
+
+        /* باکس آپلود فایل محلی */
+        .file-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px dashed rgba(56, 189, 248, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-box:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.05); }
+        .file-box input { display: none; }
+        .file-box span { font-size: 12px; color: #94a3b8; }
+
+        .button-row { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            margin-bottom: 12px; 
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .button-row-inputs {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            align-items: center;
+        }
+        .button-row-settings {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+        .btn-small {
+            padding: 8px 12px; background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5;
+            border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+        .btn-add-button {
+            width: 100%; padding: 8px; background: rgba(56, 189, 248, 0.1);
+            border: 1px dashed rgba(56, 189, 248, 0.3); color: #38bdf8;
+            border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;
+        }
+        .nav-buttons-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-submit, .btn-nav {
+            flex: 1; padding: 10px; color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 12px;
+            font-weight: 700; font-family: 'Vazirmatn', sans-serif; text-align: center;
+        }
+        .btn-submit { background: linear-gradient(135deg, #38bdf8, #6366f1); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-back { background: rgba(148, 163, 184, 0.2); border: 1px solid rgba(148, 163, 184, 0.4); color: #cbd5e1; }
+
+        .inline-buttons { display: flex; flex-direction: column; gap: 6px; }
+        .inline-btn {
+            width: 100%; padding: 10px 12px;
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            color: white; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 12.5px; font-weight: 600; text-align: right;
+        }
+        .inline-btn.success { background: linear-gradient(135deg, #10b981, #34d399); }
+        .inline-btn.info { background: linear-gradient(135deg, #a855f7, #d946ef); }
+
+        .messages-area::-webkit-scrollbar { width: 6px; }
+        .messages-area::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="support-container">
+    <div class="support-header">
+        <div class="support-avatar">🎧</div>
+        <div class="support-info">
+            <h2>پنل هوشمند</h2>
+            <p><span class="online-status"><span class="status-dot"></span>سیستم فعال و آماده به کار</span></p>
+        </div>
+    </div>
+
+    <div class="messages-area" id="messagesArea">
+        <div class="message support">
+            <div class="msg-avatar">🎧</div>
+            <div class="msg-content">
+                <div class="msg-text">👋 سلام واسه شروع از دکمه های زیر استفاده کن . یادت نره vpn رو روشن کنی و گرنه نمیتونم به سرورای تلگرام متصل بشم</div>
+            </div>
+        </div>
+        <div class="message support">
+            <div class="msg-avatar">🎧</div>
+            <div class="msg-content">
+                <div class="inline-buttons">
+                    <button class="inline-btn" onclick="showNewPostForm()">📤 ارسال پست جدید</button>
+                    <button class="inline-btn info" onclick="showEditForm()">🔘 ویرایش پست قدیمی</button>
+                    <button class="inline-btn success" onclick="showHelp()">❓ راهنمای رفع خطاها</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+class SupportBot {
+    constructor() {
+        this.activeWizardMessages = [];
+        setTimeout(() => {
+            this.botMessage("💡 لطفاً یکی از گزینه‌های بالا را انتخاب کنید.");
+        }, 1000);
+    }
+
+    botMessage(text, isHtml = false) {
+        const area = document.getElementById('messagesArea');
+        const div = document.createElement('div');
+        div.className = 'message support';
+        const content = isHtml ? text : `<div class="msg-text">${this.escapeHtml(text)}</div>`;
+        div.innerHTML = `<div class="msg-avatar">🎧</div><div class="msg-content">${content}</div>`;
+        area.appendChild(div);
+        this.scroll();
+        return div;
+    }
+
+    clearActiveWizardMessages() {
+        this.activeWizardMessages.forEach(el => el.remove());
+        this.activeWizardMessages = [];
+    }
+
+    showHelp() {
+        this.clearActiveWizardMessages();
+        const help = `
+            <div class="msg-text">
+                📚 <strong>راهنمای رفع خطاهای رایج تلگرام:</strong><br><br>
+                ❌ <strong>خطای MESSAGE_ID_INVALID:</strong> یعنی شماره پست اشتباه است، پست پاک شده، یا ربات در کانال ادمین نیست.<br>
+                ❌ <strong>خطای message is not modified:</strong> یعنی دکمه‌ها تغییری نکرده‌اند.<br>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(help, true));
+    }
+
+    showNewPostForm() {
+        this.clearActiveWizardMessages();
+        this.wizard = { token: '', channel: '', file: null, fileName: '', caption: '', textMode: 'normal', buttons: [] };
+        this.showTokenStep();
+    }
+
+    showTokenStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">📤 مرحله ۱ از ۴ — توکن ربات</div>
+                <div class="form-group">
+                    <label class="form-label">🤖 توکن ربات را وارد کنید:</label>
+                    <input type="text" class="form-input" id="wizToken" value="${this.wizard.token || ''}" placeholder="توکن تلگرام">
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-submit" onclick="window.wizTokenNext()">بعدی ▶️</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+    }
+
+    showChannelStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">📤 مرحله ۲ از ۴ — لینک کانال</div>
+                <div class="form-group">
+                    <label class="form-label">لینک یا آیدی کانال را وارد کنید:</label>
+                    <input type="text" class="form-input" id="wizChannel" value="${this.wizard.channel || ''}" placeholder="@channel_id">
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-nav btn-back" onclick="bot.showTokenStep()">◀️ قبلی</button>
+                    <button class="btn-submit" onclick="window.wizChannelNext()">بعدی ▶️</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+    }
+
+    showMediaStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">📤 مرحله ۳ از ۴ — انتخاب فایل و متن پیام</div>
+                <div class="form-group">
+                    <label class="form-label">📎 انتخاب فایل از سیستم (عکس، ویدیو، ویس، موزیک):</label>
+                    <div class="file-box" onclick="document.getElementById('wizFile').click()">
+                        <span id="wizFileName">${this.wizard.fileName || 'برای انتخاب فایل کلیک کنید (اختیاری)'}</span>
+                        <input type="file" id="wizFile" onchange="window.handleFileSelect(this)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">✍️ متن پیام یا کپشن:</label>
+                    <textarea class="form-textarea" id="wizCaption" placeholder="متن پیام خود را بنویسید...">${this.wizard.caption || ''}</textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">🎨 حالت نمایش متن:</label>
+                    <select class="form-select" id="wizTextMode">
+                        <option value="normal" ${this.wizard.textMode === 'normal' ? 'selected' : ''}>معمولی (Normal)</option>
+                        <option value="bold" ${this.wizard.textMode === 'bold' ? 'selected' : ''}>ضخیم (Bold)</option>
+                        <option value="spoiler" ${this.wizard.textMode === 'spoiler' ? 'selected' : ''}>پنهان / اسپویلر (Spoiler)</option>
+                        <option value="bold_spoiler" ${this.wizard.textMode === 'bold_spoiler' ? 'selected' : ''}>ضخیم و اسپویلر (Bold + Spoiler)</option>
+                    </select>
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-nav btn-back" onclick="bot.showChannelStep()">◀️ قبلی</button>
+                    <button class="btn-submit" onclick="window.wizMediaNext()">بعدی ▶️</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+    }
+
+    showButtonsStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">📤 مرحله ۴ از ۴ — دکمه‌های شیشه‌ای، رنگی و چیدمان</div>
+                <div class="form-group">
+                    <div id="buttonsList"></div>
+                    <button class="btn-add-button" onclick="window.addNewButton()">➕ افزودن دکمه جدید</button>
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-nav btn-back" onclick="bot.showMediaStep()">◀️ قبلی</button>
+                    <button class="btn-submit" id="sendPostBtn" onclick="window.sendPostToTelegram()">✅ ارسال به تلگرام</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+        setTimeout(() => {
+            if (this.wizard.buttons && this.wizard.buttons.length > 0) {
+                this.wizard.buttons.forEach(b => window.addNewButton(b.text, b.url, b.style, b.rowType));
+            } else {
+                window.addNewButton();
+            }
+        }, 50);
+    }
+
+    showEditForm() {
+        this.clearActiveWizardMessages();
+        this.editWizard = { token: '', channel: '', msgId: '', buttons: [] };
+        this.showEditTokenStep();
+    }
+
+    showEditTokenStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">🔘 ویرایش — مرحله ۱ از ۳ : توکن ربات</div>
+                <div class="form-group">
+                    <label class="form-label">🤖 توکن ربات:</label>
+                    <input type="text" class="form-input" id="editWizToken" value="${this.editWizard.token || ''}" placeholder="توکن تلگرام">
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-submit" onclick="window.wizEditTokenNext()">بعدی ▶️</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+    }
+
+    showEditChannelStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">🔘 ویرایش — مرحله ۲ از ۳ : کانال و آیدی پست</div>
+                <div class="form-group">
+                    <label class="form-label">لینک یا آیدی کانال:</label>
+                    <input type="text" class="form-input" id="editWizChannel" value="${this.editWizard.channel || ''}" placeholder="@channel_id">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">شماره یا لینک پست:</label>
+                    <input type="text" class="form-input" id="editWizMsgId" value="${this.editWizard.msgId || ''}" placeholder="مثلا 25">
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-nav btn-back" onclick="bot.showEditTokenStep()">◀️ قبلی</button>
+                    <button class="btn-submit" onclick="window.wizEditChannelNext()">بعدی ▶️</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+    }
+
+    showEditButtonsStep() {
+        this.clearActiveWizardMessages();
+        const form = `
+            <div class="form-container">
+                <div class="form-title">🔘 ویرایش — مرحله ۳ از ۳ : دکمه‌های رنگی جدید</div>
+                <div class="form-group">
+                    <div id="editButtonsList"></div>
+                    <button class="btn-add-button" onclick="window.addEditButton()">➕ افزودن دکمه جدید</button>
+                </div>
+                <div class="nav-buttons-row">
+                    <button class="btn-nav btn-back" onclick="bot.showEditChannelStep()">◀️ قبلی</button>
+                    <button class="btn-submit" id="editSubmitBtn" onclick="window.editPostButtons()">⚡ اعمال تغییرات</button>
+                </div>
+            </div>
+        `;
+        this.activeWizardMessages.push(this.botMessage(form, true));
+        setTimeout(() => {
+            if (this.editWizard.buttons && this.editWizard.buttons.length > 0) {
+                this.editWizard.buttons.forEach(b => window.addEditButton(b.text, b.url, b.style, b.rowType));
+            } else {
+                window.addEditButton();
+            }
+        }, 50);
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    scroll() {
+        const area = document.getElementById('messagesArea');
+        setTimeout(() => { area.scrollTop = area.scrollHeight; }, 50);
+    }
+
+    buildKeyboardMatrix(buttons) {
+        const keyboard = [];
+        let currentRow = [];
+        buttons.forEach((btn, index) => {
+            const buttonObj = { text: btn.text, url: btn.url, style: btn.style };
+            if (index === 0 || btn.rowType === 'new') {
+                if (currentRow.length > 0) {
+                    keyboard.push(currentRow);
+                    currentRow = [];
+                }
+                currentRow.push(buttonObj);
+            } else {
+                currentRow.push(buttonObj);
+            }
+        });
+        if (currentRow.length > 0) keyboard.push(currentRow);
+        return keyboard;
+    }
+
+    async sendToTelegram(token, rawChannel, fileObj, caption, textMode, buttons) {
+        const btnElement = document.getElementById('sendPostBtn');
+        try {
+            if(btnElement) {
+                btnElement.disabled = true;
+                btnElement.textContent = '⏳ در حال آپلود و ارسال...';
+            }
+
+            let channel = rawChannel.trim();
+            if (!channel.startsWith('@') && !channel.startsWith('-100')) {
+                channel = '@' + channel;
+            }
+
+            const api = `https://api.telegram.org/bot${token}/`;
+            const formData = new FormData();
+            formData.append('chat_id', channel);
+
+            const keyboardMatrix = buttons && buttons.length > 0 ? this.buildKeyboardMatrix(buttons) : null;
+            if (keyboardMatrix) {
+                formData.append('reply_markup', JSON.stringify({ inline_keyboard: keyboardMatrix }));
+            }
+
+            let method = 'sendMessage';
+            let formattedText = caption || '';
+
+            if (formattedText) {
+                if (textMode === 'bold') {
+                    formData.append('parse_mode', 'HTML');
+                    formattedText = `<b>${this.escapeHtml(formattedText)}</b>`;
+                } else if (textMode === 'spoiler') {
+                    formData.append('parse_mode', 'HTML');
+                    formattedText = `<tg-spoiler>${this.escapeHtml(formattedText)}</tg-spoiler>`;
+                } else if (textMode === 'bold_spoiler') {
+                    formData.append('parse_mode', 'HTML');
+                    formattedText = `<tg-spoiler><b>${this.escapeHtml(formattedText)}</b></tg-spoiler>`;
+                }
+            }
+
+            if (fileObj) {
+                const type = fileObj.type;
+                if (type.startsWith('image/')) { method = 'sendPhoto'; formData.append('photo', fileObj); }
+                else if (type.startsWith('audio/')) { method = 'sendAudio'; formData.append('audio', fileObj); }
+                else if (type.startsWith('video/')) { method = 'sendVideo'; formData.append('video', fileObj); }
+                else { method = 'sendDocument'; formData.append('document', fileObj); }
+
+                if (formattedText) formData.append('caption', formattedText);
+            } else {
+                formData.append('text', formattedText);
+            }
+
+            const res = await fetch(api + method, { method: 'POST', body: formData });
+            const data = await res.json();
+
+            this.clearActiveWizardMessages();
+
+            if (data.ok) {
+                this.botMessage("✅ پست و فایل شما با موفقیت در کانال منتشر شد! 🎉");
+                setTimeout(() => { location.reload(); }, 2000);
+            } else {
+                this.botMessage("❌ خطا در ارسال: " + (data.description || "خطای ناشناخته"));
+                if(btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.textContent = '✅ ارسال به تلگرام';
+                }
+            }
+        } catch (error) {
+            this.clearActiveWizardMessages();
+            this.botMessage("❌ خطای شبکه: " + error.message);
+            if(btnElement) {
+                btnElement.disabled = false;
+                btnElement.textContent = '✅ ارسال به تلگرام';
+            }
+        }
+    }
+
+    async editPostButtonsAction(token, rawChannel, rawMsgId, buttons) {
+        const btnElement = document.getElementById('editSubmitBtn');
+        try {
+            if(btnElement) {
+                btnElement.disabled = true;
+                btnElement.textContent = '⏳ در حال اعمال تغییرات...';
+            }
+
+            let channel = rawChannel.trim();
+            if (!channel.startsWith('@') && !channel.startsWith('-100')) {
+                channel = '@' + channel;
+            }
+
+            const api = `https://api.telegram.org/bot${token}/`;
+            const keyboardMatrix = buttons && buttons.length > 0 ? this.buildKeyboardMatrix(buttons) : [];
+
+            const res = await fetch(api + 'editMessageReplyMarkup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: channel,
+                    message_id: rawMsgId.trim(),
+                    reply_markup: { inline_keyboard: keyboardMatrix }
+                })
+            });
+
+            const data = await res.json();
+            this.clearActiveWizardMessages();
+
+            if (data.ok) {
+                this.botMessage("✅ دکمه‌های پست با موفقیت بروزرسانی شدند! 🎉");
+                setTimeout(() => { location.reload(); }, 2000);
+            } else if (data.description && data.description.includes('message is not modified')) {
+                this.botMessage("ℹ️ دکمه‌ها از قبل تغییر نکرده بودند.");
+                setTimeout(() => { location.reload(); }, 2000);
+            } else {
+                this.botMessage("❌ خطا در ویرایش: " + (data.description || "خطای ناشناخته"));
+                if(btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.textContent = '⚡ اعمال تغییرات';
+                }
+            }
+        } catch (error) {
+            this.clearActiveWizardMessages();
+            this.botMessage("❌ خطای شبکه: " + error.message);
+            if(btnElement) {
+                btnElement.disabled = false;
+                btnElement.textContent = '⚡ اعمال تغییرات';
+            }
+        }
+    }
+}
+
+const bot = new SupportBot();
+
+window.handleFileSelect = function(input) {
+    if (input.files && input.files[0]) {
+        bot.wizard.file = input.files[0];
+        bot.wizard.fileName = input.files[0].name;
+        document.getElementById('wizFileName').textContent = '📄 ' + input.files[0].name;
+    }
+};
+
+window.addNewButton = function(valText = '', valUrl = '', valStyle = 'primary', valRowType = 'new') {
+    const list = document.getElementById('buttonsList');
+    const div = document.createElement('div');
+    div.className = 'button-row';
+    div.innerHTML = `
+        <div class="button-row-inputs">
+            <input type="text" class="form-input" placeholder="عنوان دکمه" value="${valText}" style="flex: 1;">
+            <input type="text" class="form-input" placeholder="لینک" value="${valUrl}" style="flex: 1.2;">
+            <button class="btn-small" onclick="this.closest('.button-row').remove()">✕</button>
+        </div>
+        <div class="button-row-settings">
+            <select class="form-select" style="flex: 1;">
+                <option value="primary" ${valStyle==='primary'?'selected':''}>🔵 رنگ: آبی</option>
+                <option value="success" ${valStyle==='success'?'selected':''}>🟢 رنگ: سبز</option>
+                <option value="danger" ${valStyle==='danger'?'selected':''}>🔴 رنگ: قرمز</option>
+            </select>
+            <select class="form-select" style="flex: 1;">
+                <option value="new" ${valRowType==='new'?'selected':''}>⬇️ سطر جدید</option>
+                <option value="same" ${valRowType==='same'?'selected':''}>➡️ کنار قبلی</option>
+            </select>
+        </div>
+    `;
+    list.appendChild(div);
+};
+
+window.addEditButton = function(valText = '', valUrl = '', valStyle = 'primary', valRowType = 'new') {
+    const list = document.getElementById('editButtonsList');
+    const div = document.createElement('div');
+    div.className = 'button-row';
+    div.innerHTML = `
+        <div class="button-row-inputs">
+            <input type="text" class="form-input" placeholder="عنوان دکمه" value="${valText}" style="flex: 1;">
+            <input type="text" class="form-input" placeholder="لینک" value="${valUrl}" style="flex: 1.2;">
+            <button class="btn-small" onclick="this.closest('.button-row').remove()">✕</button>
+        </div>
+        <div class="button-row-settings">
+            <select class="form-select" style="flex: 1;">
+                <option value="primary" ${valStyle==='primary'?'selected':''}>🔵 رنگ: آبی</option>
+                <option value="success" ${valStyle==='success'?'selected':''}>🟢 رنگ: سبز</option>
+                <option value="danger" ${valStyle==='danger'?'selected':''}>🔴 رنگ: قرمز</option>
+            </select>
+            <select class="form-select" style="flex: 1;">
+                <option value="new" ${valRowType==='new'?'selected':''}>⬇️ سطر جدید</option>
+                <option value="same" ${valRowType==='same'?'selected':''}>➡️ کنار قبلی</option>
+            </select>
+        </div>
+    `;
+    list.appendChild(div);
+};
+
+window.wizTokenNext = function() {
+    const val = document.getElementById('wizToken').value.trim();
+    if (!val) { bot.botMessage("⚠️ لطفاً توکن ربات را وارد کنید!"); return; }
+    bot.wizard.token = val;
+    bot.showChannelStep();
+};
+
+window.wizChannelNext = function() {
+    const val = document.getElementById('wizChannel').value.trim();
+    if (!val) { bot.botMessage("⚠️ لطفاً آیدی کانال را وارد کنید!"); return; }
+    bot.wizard.channel = val;
+    bot.showMediaStep();
+};
+
+window.wizMediaNext = function() {
+    bot.wizard.caption = document.getElementById('wizCaption').value.trim();
+    bot.wizard.textMode = document.getElementById('wizTextMode').value;
+    bot.showButtonsStep();
+};
+
+window.sendPostToTelegram = async function() {
+    const rows = document.querySelectorAll('#buttonsList .button-row');
+    const buttons = [];
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const selects = row.querySelectorAll('select');
+        const btnText = inputs[0].value.trim();
+        const btnUrl = inputs[1].value.trim();
+        const btnStyle = selects[0] ? selects[0].value : 'primary';
+        const btnRowType = selects[1] ? selects[1].value : 'new';
+        if (btnText && btnUrl) {
+            buttons.push({ 
+                text: btnText, 
+                url: btnUrl.includes('http') ? btnUrl : 'https://' + btnUrl, 
+                style: btnStyle,
+                rowType: btnRowType 
+            });
+        }
+    });
+    bot.wizard.buttons = buttons;
+    await bot.sendToTelegram(bot.wizard.token, bot.wizard.channel, bot.wizard.file, bot.wizard.caption, bot.wizard.textMode, buttons);
+};
+
+window.wizEditTokenNext = function() {
+    const val = document.getElementById('editWizToken').value.trim();
+    if (!val) { bot.botMessage("⚠️ لطفاً توکن ربات را وارد کنید!"); return; }
+    bot.editWizard.token = val;
+    bot.showEditChannelStep();
+};
+
+window.wizEditChannelNext = function() {
+    const channelVal = document.getElementById('editWizChannel').value.trim();
+    const msgIdVal = document.getElementById('editWizMsgId').value.trim();
+    if (!channelVal || !msgIdVal) { bot.botMessage("⚠️ لطفاً کانال و شماره پست را کامل وارد کنید!"); return; }
+    bot.editWizard.channel = channelVal;
+    bot.editWizard.msgId = msgIdVal;
+    bot.showEditButtonsStep();
+};
+
+window.editPostButtons = async function() {
+    const rows = document.querySelectorAll('#editButtonsList .button-row');
+    const buttons = [];
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input');
+        const selects = row.querySelectorAll('select');
+        const btnText = inputs[0].value.trim();
+        const btnUrl = inputs[1].value.trim();
+        const btnStyle = selects[0] ? selects[0].value : 'primary';
+        const btnRowType = selects[1] ? selects[1].value : 'new';
+        if (btnText && btnUrl) {
+            buttons.push({ 
+                text: btnText, 
+                url: btnUrl.includes('http') ? btnUrl : 'https://' + btnUrl, 
+                style: btnStyle,
+                rowType: btnRowType 
+            });
+        }
+    });
+    bot.editWizard.buttons = buttons;
+    await bot.editPostButtonsAction(bot.editWizard.token, bot.editWizard.channel, bot.editWizard.msgId, buttons);
+};
+
+window.showNewPostForm = () => bot.showNewPostForm();
+window.showEditForm = () => bot.showEditForm();
+window.showHelp = () => bot.showHelp();
+</script>
+
+</body>
+</html>
